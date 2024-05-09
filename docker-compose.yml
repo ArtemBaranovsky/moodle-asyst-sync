@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:11.3
+    env_file:
+      - ./.env
+    volumes:
+      - moodledata:${MOODLE_BASE_DIR_DATA}
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - network  # Добавление к сети
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}  # Пользователь базы данных
+      - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}  # Пароль пользователя базы данных
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-u", "root", "--password=${MARIADB_ROOT_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  moodle:
+    env_file:
+      - ./.env
+    build:  # Собираем свой образ Moodle из Dockerfile+.
+      context: .  # Контекст сборки (где находится Dockerfile+.)
+      dockerfile: Dockerfile
+      args:
+        - MOODLE_BASE_DIR=${MOODLE_BASE_DIR}
+        - MOODLE_BASE_DIR_DATA=${MOODLE_BASE_DIR_DATA}
+        - MOODLE_DATABASE_TYPE=mariadb
+        - MOODLE_DATABASE_HOST=${MOODLE_DATABASE_HOST}
+        - MOODLE_DATABASE_NAME=${MOODLE_DATABASE_NAME}  # Имя базы данных
+        - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}  # Пользователь базы данных
+        - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}  # Пароль пользователя базы данных
+    ports:
+      - 80:80  # Порт на хосте:порт в контейнере
+      - 443:443  # Порт на хосте:порт в контейнере
+#      - 80:8080  # Порт на хосте:порт в контейнере
+#      - 443:8443  # Порт на хосте:порт в контейнере
+    depends_on:  # Зависимость от сервиса MariaDB
+      - mariadb
+    volumes:
+      - ./yourplugin:${MOODLE_BASE_DIR}/local/yourplugin  # Синхронизируем папку плагина с контейнером
+      - moodle_data:${MOODLE_BASE_DIR} # Том для данных Moodle
+      - moodledata:${MOODLE_BASE_DIR_DATA}  # Том для данных Moodle
+    networks:
+      - network  # Добавление к сети
+    healthcheck:
+      test: /bin/bash -c 'while ! nc -z mariadb 3306; do echo "Ждем подключения к базе данных..."; sleep 5; done'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  moodledata:
+    driver: local  # Локальный драйвер томов
+  mariadb_data:
+    driver: local
+  moodle_data:
+    driver: local
+
+networks:
+  network:  # Создание пользовательской сети
+    driver: bridge
