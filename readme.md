@@ -7,4 +7,3 @@ docker-compose exec moodle php /var/www/html/moodle/admin/cli/install.php --wwwr
 docker-compose exec moodle chown -R www-data:www-data /var/www/html/moodle
 docker-compose exec moodle chmod -R 755 /var/www/html/moodle
 ~~~
-
