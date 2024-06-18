@@ -1,0 +1,7 @@
+torch
+Flask
+matplotlib
+scikit-learn
+transformers
+pandas
+sentence_transformers

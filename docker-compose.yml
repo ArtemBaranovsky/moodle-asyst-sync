@@ -3,10 +3,11 @@ version: '3.8'
 services:
   mariadb:
     image: mariadb:11.3
+    restart: always
     env_file:
       - ./.env
     volumes:
-      - moodledata:${MOODLE_BASE_DIR_DATA}
+      #      - moodledata:${MOODLE_BASE_DIR_DATA}
       - mariadb_data:/var/lib/mysql
     ports:
       - 3306:3306
@@ -25,6 +26,7 @@ services:
   moodle:
     env_file:
       - ./.env
+    restart: always
     build:  # Собираем свой образ Moodle из Dockerfile+.
       context: .  # Контекст сборки (где находится Dockerfile+.)
       dockerfile: Dockerfile
@@ -37,14 +39,14 @@ services:
         - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}  # Пользователь базы данных
         - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}  # Пароль пользователя базы данных
     ports:
-      - 80:80  # Порт на хосте:порт в контейнере
-      - 443:443  # Порт на хосте:порт в контейнере
-#      - 80:8080  # Порт на хосте:порт в контейнере
-#      - 443:8443  # Порт на хосте:порт в контейнере
-    depends_on:  # Зависимость от сервиса MariaDB
+      - 80:80
+      - 443:443
+      - 5000:5000
+    depends_on: # Dependency from MariaDB service
       - mariadb
     volumes:
-      - ./yourplugin:${MOODLE_BASE_DIR}/local/yourplugin  # Синхронизируем папку плагина с контейнером
+      #      - ./yourplugin:${MOODLE_BASE_DIR}/mod/yourplugin  # Синхронизируем папку плагина с контейнером
+      - moodle_plugin:${MOODLE_BASE_DIR}/mod/yourplugin  # Синхронизируем папку плагина с контейнером
       - moodle_data:${MOODLE_BASE_DIR} # Том для данных Moodle
       - moodledata:${MOODLE_BASE_DIR_DATA}  # Том для данных Moodle
     networks:
@@ -54,6 +56,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    command: [ "bash", "-c", "apache2ctl -D FOREGROUND" ]
 volumes:
   moodledata:
     driver: local  # Локальный драйвер томов
@@ -61,7 +64,8 @@ volumes:
     driver: local
   moodle_data:
     driver: local
+  moodle_plugin:
+    driver: local
 
 networks:
-  network:  # Создание пользовательской сети
-    driver: bridge
+  network:  # Создание пользовате

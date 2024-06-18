@@ -1,9 +1,15 @@
+### How to wrap up and run Moodle Server:
 
-How to run Moodle Server:
+Run these commands at CLI to use ASYST with universal BERT model based on German language.
 
 ~~~bash
 docker-compose up -d --build
-docker-compose exec moodle php /var/www/html/moodle/admin/cli/install.php --wwwroot=http://0.0.0.0 --dataroot=/var/www/html/moodledata --dbtype=mariadb --dbname=moodle  --dbuser=moodleuser --dbpass=moodlepassword --dbhost=mariadb --adminpass=rootpassword --fullname="Moodle Site" --shortname="Moodle" --agree-license  --non-interactive
-docker-compose exec moodle chown -R www-data:www-data /var/www/html/moodle
-docker-compose exec moodle chmod -R 755 /var/www/html/moodle
+install_moodle
 ~~~
+
+It is suggested to use our moodle plugin to communicate with ASYST script using such a
+route http://127.0.0.1:5000/api/data
+
+Now the preinstalled MOODLE LMS is available at https://www.moodle.loc
+
+**Note**: Bind https://www.moodle.loc to your localhost at **hosts** file depending on your OS.
