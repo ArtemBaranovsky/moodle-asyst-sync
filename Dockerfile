@@ -17,7 +17,7 @@ ENV MOODLE_BASE_DIR_DATA ${MOODLE_BASE_DIR_DATA}
 
 # Installing necessary packages
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y apache2 php libapache2-mod-php php-mysqli php-mysql php-xml php-pdo php-pdo-mysql mariadb-client mariadb-server wget unzip p7zip-full python3 python3-pip iputils-ping php-mbstring graphviz aspell ghostscript clamav php8.2-pspell php8.2-curl php8.2-gd php8.2-intl php8.2-mysql php8.2-xml php8.2-xmlrpc php8.2-ldap php8.2-zip php8.2-soap php8.2-mbstring openssl git && \
+    apt-get install -y apache2 php libapache2-mod-php php-mysqli php-mysql php-xml php-pdo php-pdo-mysql mariadb-client mariadb-server wget unzip p7zip-full python3 python3-pip iputils-ping php-mbstring graphviz aspell ghostscript clamav php8.2-pspell php8.2-curl php8.2-gd php8.2-intl php8.2-mysql php8.2-xml php8.2-xmlrpc php8.2-ldap php8.2-zip php8.2-soap php8.2-mbstring openssl git nano supervisor && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Setting necessary php params
@@ -153,3 +153,9 @@ EXPOSE 80 443 5000
 # Run the Flask app (modify entrypoint or use a custom script if needed)
 #CMD ["bash", "-c", "service apache2 start && source /opt/myenv/bin/activate && python3 /var/www/html/moodle/install_moodle.sh /var/www/html/moodle/api.py "]
 #CMD ["bash", "-c", "service apache2 start && source /opt/myenv/bin/activate && python3 /var/www/html/moodle/api.py && /var/www/html/moodle/install_moodle.sh"]
+
+# Setting up supervisord
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Running supervisord
+CMD ["/usr/bin/supervisord"]
