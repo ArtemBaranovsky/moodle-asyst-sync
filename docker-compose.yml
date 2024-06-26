@@ -42,6 +42,9 @@ services:
       - 80:80
       - 443:443
       - 5000:5000
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on: # Dependency from MariaDB service
       - mariadb
     volumes:
@@ -51,12 +54,6 @@ services:
       - moodledata:${MOODLE_BASE_DIR_DATA}  # Том для данных Moodle
     networks:
       - network  # Добавление к сети
-    healthcheck:
-      test: /bin/bash -c 'while ! nc -z mariadb 3306; do echo "Ждем подключения к базе данных..."; sleep 5; done'
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: [ "bash", "-c", "apache2ctl -D FOREGROUND" ]
 volumes:
   moodledata:
     driver: local  # Локальный драйвер томов

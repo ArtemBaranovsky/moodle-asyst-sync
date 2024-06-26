@@ -24,8 +24,8 @@ docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
 docker-compose exec moodle chmod -R 755 /var/www/html/moodle
 
 # Set correct access rules for the plugin
-#docker-compose exec moodle chown -R www-data:www-data /var/www/html/moodle/mod/yourplugin
-#docker-compose exec moodle chmod -R 775 /var/www/html/moodle/mod/yourplugin
+docker-compose exec moodle chown -R www-data:www-data /var/www/html/moodle/mod/yourplugin
+docker-compose exec moodle chmod -R 775 /var/www/html/moodle/mod/yourplugin
 
 # Create the run_sag script file
 docker-compose exec moodle bash -c 'echo "#!/bin/bash" > /usr/local/bin/run_sag'

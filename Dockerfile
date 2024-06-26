@@ -44,6 +44,8 @@ RUN python3 -m venv /opt/myenv
 RUN /opt/myenv/bin/python3 -m pip install --upgrade pip
 #RUN /opt/myenv/bin/python3 -m pip install matplotlib Flask torch sklearn-learn
 COPY requirements.txt /opt/myenv/
+COPY sentence-transformers-paraphrase-multilingual-MiniLM-L12-v2 /var/www/html/moodle/sentence-transformers-paraphrase-multilingual-MiniLM-L12-v2
+WORKDIR /var/www/html/moodle
 RUN /opt/myenv/bin/python3 -m pip install -r /opt/myenv/requirements.txt
 RUN /opt/myenv/bin/python3 -m pip install --upgrade setuptools wheel
 
@@ -148,11 +150,6 @@ RUN a2enmod ssl
 
 #Opening ports
 EXPOSE 80 443 5000
-
-#RUN /var/www/html/moodle/install_moodle.sh
-# Run the Flask app (modify entrypoint or use a custom script if needed)
-#CMD ["bash", "-c", "service apache2 start && source /opt/myenv/bin/activate && python3 /var/www/html/moodle/install_moodle.sh /var/www/html/moodle/api.py "]
-#CMD ["bash", "-c", "service apache2 start && source /opt/myenv/bin/activate && python3 /var/www/html/moodle/api.py && /var/www/html/moodle/install_moodle.sh"]
 
 # Setting up supervisord
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
