@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/yourplugin/db" VERSION="2024032201" COMMENT="XMLDB file for mod yourplugin plugin"
+<XMLDB PATH="local/asystgrade/db" VERSION="2024032201" COMMENT="XMLDB file for mod asystgrade plugin"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
     <TABLES>
-        <TABLE NAME="mod_yourplugin" COMMENT="Table for storing yourplugin data">
+        <TABLE NAME="local_asystgrade" COMMENT="Table for storing asystgrade data">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true"/>
                 <FIELD NAME="question" TYPE="text" NOTNULL="true"/>

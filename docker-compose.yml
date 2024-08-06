@@ -7,37 +7,32 @@ services:
     env_file:
       - ./.env
     volumes:
-      #      - moodledata:${MOODLE_BASE_DIR_DATA}
       - mariadb_data:/var/lib/mysql
     ports:
       - 3306:3306
     networks:
-      - network  # Добавление к сети
+      - network  # Adding the network communication between containers
     environment:
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
-      - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}  # Пользователь базы данных
-      - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}  # Пароль пользователя базы данных
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-u", "root", "--password=${MARIADB_ROOT_PASSWORD}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}
+      - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}
+
 
   moodle:
     env_file:
       - ./.env
     restart: always
-    build:  # Собираем свой образ Moodle из Dockerfile+.
-      context: .  # Контекст сборки (где находится Dockerfile+.)
+    build:  # Building own Moodle container from Dockerfile.
+      context: .  # The context of the build (where is Dockerfile)
       dockerfile: Dockerfile
       args:
         - MOODLE_BASE_DIR=${MOODLE_BASE_DIR}
         - MOODLE_BASE_DIR_DATA=${MOODLE_BASE_DIR_DATA}
         - MOODLE_DATABASE_TYPE=mariadb
         - MOODLE_DATABASE_HOST=${MOODLE_DATABASE_HOST}
-        - MOODLE_DATABASE_NAME=${MOODLE_DATABASE_NAME}  # Имя базы данных
-        - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}  # Пользователь базы данных
-        - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}  # Пароль пользователя базы данных
+        - MOODLE_DATABASE_NAME=${MOODLE_DATABASE_NAME}
+        - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}
+        - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}
     ports:
       - 80:80
       - 443:443
@@ -48,21 +43,21 @@ services:
     depends_on: # Dependency from MariaDB service
       - mariadb
     volumes:
-      #      - ./yourplugin:${MOODLE_BASE_DIR}/mod/yourplugin  # Синхронизируем папку плагина с контейнером
-      - moodle_plugin:${MOODLE_BASE_DIR}/mod/yourplugin  # Синхронизируем папку плагина с контейнером
-      - moodle_data:${MOODLE_BASE_DIR} # Том для данных Moodle
-      - moodledata:${MOODLE_BASE_DIR_DATA}  # Том для данных Moodle
+      - ${PWD}/asystgrade:${MOODLE_BASE_DIR}/local/asystgrade  # Sync the plugin folder with the container
+      - moodle_data:${MOODLE_BASE_DIR}  # Volume for Moodle
+      - moodledata:${MOODLE_BASE_DIR_DATA}  # Volume for Moodle data
     networks:
-      - network  # Добавление к сети
-volumes:
+      - network  # Adding the network communication between containers
+
+volumes: # Defining local volumes
   moodledata:
-    driver: local  # Локальный драйвер томов
+    driver: local
   mariadb_data:
     driver: local
   moodle_data:
     driver: local
-  moodle_plugin:
+  asystgrade:
     driver: local
 
 networks:
-  network:  # Создание пользовате
+  network:  # Creating a network

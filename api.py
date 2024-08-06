@@ -1,34 +1,27 @@
 # api.py
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+import os
+import sys
 
-# TODO: Adding correct path to ASYST script run_LR_SBERT.py
-# from run_LR_SBERT import main
+# Adding a path of module to system path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'asyst/Source/Skript/german')))
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), 'asyst/Source/Skript/german'))
+from run_LR_SBERT import process_data
 
 app = Flask(__name__)
 
-@app.route('/api/data', methods=['GET'])
+@app.route('/api/autograde', methods=['POST'])
 def get_data():
-    # Using path to data and model
-    data_path = '/var/www/html/moodle/asyst/Source/Skript/outputs/test.tsv'
-    model_dir = '/var/www/html/moodle/asyst/Source/Skript/german/models'
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
 
-    # Obtaining results from run_asyst function
-#     results => run_asyst(data_path, model_dir)
-
-    # Demo dummy API output
-    results = {
-        'message': 'Hello from Python API!',
-        'data': {
-            'key1': 'value1',
-            'key2': 'value2'
-        }
-    }
-
-    # Returning result in JSON format
-    return jsonify(results)
+        results = process_data(data)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -44,7 +44,7 @@ RUN python3 -m venv /opt/myenv
 RUN /opt/myenv/bin/python3 -m pip install --upgrade pip
 #RUN /opt/myenv/bin/python3 -m pip install matplotlib Flask torch sklearn-learn
 COPY requirements.txt /opt/myenv/
-COPY sentence-transformers-paraphrase-multilingual-MiniLM-L12-v2 /var/www/html/moodle/sentence-transformers-paraphrase-multilingual-MiniLM-L12-v2
+
 WORKDIR /var/www/html/moodle
 RUN /opt/myenv/bin/python3 -m pip install -r /opt/myenv/requirements.txt
 RUN /opt/myenv/bin/python3 -m pip install --upgrade setuptools wheel
@@ -80,11 +80,11 @@ RUN chown -R www-data:www-data ${MOODLE_BASE_DIR} && \
     chmod -R 755 ${MOODLE_BASE_DIR_DATA}
 
 # Copying of beeing developed Plugin
-COPY yourplugin ${MOODLE_BASE_DIR}/mod/yourplugin
+COPY asystgrade ${MOODLE_BASE_DIR}/local/asystgrade
 
 # Setting correct acces rules for Plugin
-#RUN chown -R www-data:www-data ${MOODLE_BASE_DIR}/mod/yourplugin && \
-RUN chmod -R 755 ${MOODLE_BASE_DIR}/mod/yourplugin
+#RUN chown -R www-data:www-data ${MOODLE_BASE_DIR}/local/asystgrade && \
+RUN chmod -R 755 ${MOODLE_BASE_DIR}/local/asystgrade
 
 # Making Symlink for MariaDB Socket
 RUN ln -s /run/mysqld/mysqld.sock /tmp/mysql.sock
@@ -96,8 +96,8 @@ RUN echo  \
     "<VirtualHost *:80>\n" \
         "ServerName www.moodle.loc\n" \
         "ServerAlias www.moodle.loc\n" \
-        "DocumentRoot /var/www/html/moodle\n" \
-        "<Directory /var/www/html/moodle>\n" \
+        "DocumentRoot ${MOODLE_BASE_DIR}\n" \
+        "<Directory ${MOODLE_BASE_DIR}>\n" \
         "  Options +FollowSymlinks\n" \
         "  AllowOverride All\n" \
         "  Require all granted\n" \
@@ -124,8 +124,8 @@ RUN echo  \
     "<VirtualHost *:443>\n" \
         "ServerName www.moodle.loc\n" \
         "ServerAlias www.moodle.loc\n" \
-        "DocumentRoot /var/www/html/moodle\n" \
-        "<Directory /var/www/html/moodle>\n" \
+        "DocumentRoot ${MOODLE_BASE_DIR}\n" \
+        "<Directory ${MOODLE_BASE_DIR}>\n" \
         "  Options +FollowSymlinks\n" \
         "  AllowOverride All\n" \
         "  Require all granted\n" \
@@ -147,6 +147,9 @@ RewriteRule ^(.*)$ https://www.moodle.loc/$1 [R,L] \n\
 
 # Enable SSL module in Apache
 RUN a2enmod ssl
+
+# Adding entry to /etc/hosts
+#RUN echo "127.0.0.1 ${MOODLE_WWWROOT##https://}" >> /etc/hosts
 
 #Opening ports
 EXPOSE 80 443 5000
