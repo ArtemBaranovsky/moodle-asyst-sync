@@ -6,10 +6,11 @@ To use ASYST with universal BERT model based on German language just Run these c
 docker-compose up -d --build && ./install_moodle.sh
 ~~~
 
-Infrastructure rolls up a Brand New Moodle instance. If you have  
+Infrastructure rolls up a Brand New Moodle instance. If you already have Moodle LMS, you could use it's DB backup at this project. Just paste it at root folder and rename it to moodle_backup.sql 
 
 Use these creds to access Moodle admin page
 admin:rootpassword
+These creds could be easily changed as other environmental variables at .env
 
 ## Development tips
 To facilitate DB monitoring at IDE set such a Database connection URL: 
