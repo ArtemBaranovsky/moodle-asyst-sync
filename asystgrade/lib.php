@@ -44,11 +44,21 @@ function local_asystgrade_before_footer()
     if ($PAGE->url->compare(new moodle_url('/mod/quiz/report.php'), URL_MATCH_BASE) && $slot) {
         $quizQuery = new QuizQuery();
 
+        if ($quizQuery->gradesExist($qid, $slot)) {
+            error_log('Grades already exist in the database.');
+            return;
+        }
+
         $question_attempts = $quizQuery->get_question_attempts($qid, $slot);
         $referenceAnswer = $quizQuery->get_reference_answer($qid);
 
         $data = prepare_api_data($quizQuery, $question_attempts, $referenceAnswer);
-
+        foreach ($data['studentAnswers'] as $index => $studentAnswer) {
+            $userid = $data['studentIds'][$index];
+            if ($quizQuery->gradesExist($qid, $userid)) {
+                return;
+            }
+        }
         $inputNames = $data['inputNames'];
 
         error_log('Data prepared: ' . print_r($data, true));
@@ -105,6 +115,7 @@ function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAns
 {
     $studentAnswers = [];
     $inputNames = [];
+    $studentIds = [];
 
     foreach ($question_attempts as $question_attempt) {
         $quizattempt_steps = $database->get_attempt_steps($question_attempt->id);
@@ -114,7 +125,7 @@ function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAns
                 $studentAnswer = $database->get_student_answer($quizattempt_step->id);
                 $studentAnswers[] = $studentAnswer;
                 $inputNames[] = "q" . $question_attempt->questionusageid . ":" . $question_attempt->slot . "_-mark";
-
+                $studentIds[] = $quizattempt_step->userid;
                 error_log("Student Answer: $studentAnswer, Input Name: " . end($inputNames));
             }
         }
@@ -127,7 +138,8 @@ function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAns
     return [
         'referenceAnswer' => $referenceAnswer,
         'studentAnswers' => $studentAnswers,
-        'inputNames' => $inputNames
+        'inputNames' => $inputNames,
+        'studentIds' => $studentIds
     ];
 }
 

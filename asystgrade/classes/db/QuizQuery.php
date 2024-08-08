@@ -72,4 +72,24 @@ class QuizQuery implements QuizQueryInterface
             MUST_EXIST
         )->value;
     }
+
+    /**
+     * Checks if scores exist for a given quizid and userid.
+     * *
+     * * @param int $quizid quiz ID.
+     * * @param int $userid user ID.
+     * * @return bool Returns true if scores exist for a given quizid and userid, otherwise false.
+ */
+    public function gradesExist(int $quizid, int $userid): bool {
+        global $DB;
+
+        // Check for the presence of an entry in the mdl_quiz_grades table for this quizid and userid
+        return $DB->record_exists(
+            'quiz_grades',
+            [
+                'quiz' => $quizid,
+                'userid' => $userid
+            ]
+        );
+    }
 }
