@@ -21,6 +21,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 use local_asystgrade\api\client;
+use local_asystgrade\api\http_client;
+use local_asystgrade\db\QuizQuery;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -33,90 +35,24 @@ defined('MOODLE_INTERNAL') || die();
 
 function local_asystgrade_before_footer()
 {
-    global $PAGE, $DB;
+    global $PAGE;
 
     // Получение параметров из URL
     $qid = optional_param('qid', null, PARAM_INT);
     $slot = optional_param('slot', false, PARAM_INT);
 
     if ($PAGE->url->compare(new moodle_url('/mod/quiz/report.php'), URL_MATCH_BASE) && $slot) {
-        $question_attempts = $DB->get_recordset(
-            'question_attempts',
-            [
-                'questionid' => $qid,
-                'slot'       => $slot
-            ],
-            '',
-            '*'
-        );
+        $quizQuery = new QuizQuery();
 
-        // Obtaining exemplary answer
-        $referenceAnswer = $DB->get_record(
-            'qtype_essay_options',
-            [
-                'questionid' => $qid
-            ],
-            '*',
-            MUST_EXIST
-        )->graderinfo;
+        $question_attempts = $quizQuery->get_question_attempts($qid, $slot);
+        $referenceAnswer = $quizQuery->get_reference_answer($qid);
 
-        $studentAnswers = [];
-        $inputNames = [];
-        foreach ($question_attempts as $question_attempt) {
+        $data = prepare_api_data($quizQuery, $question_attempts, $referenceAnswer);
 
-            // Obtaining all steps for this questionusageid
-            $quizattempt_steps = $DB->get_recordset(
-                'question_attempt_steps',
-                [
-                    'questionattemptid' => $question_attempt->id
-                ],
-                '',
-                '*'
-            );
-
-            // Processing every quiz attempt step
-            foreach ($quizattempt_steps as $quizattempt_step) {
-                if ($quizattempt_step->state === 'complete') {
-                    $userid = $quizattempt_step->userid;
-                    $attemptstepid = $quizattempt_step->id;
-
-                    // Obtaining student's answer
-                    $studentAnswer = $DB->get_record(
-                        'question_attempt_step_data',
-                        [
-                            'attemptstepid' => $attemptstepid,
-                            'name'          => 'answer'
-                        ],
-                        '*',
-                        MUST_EXIST
-                    )->value;
-
-                    // Forming student's answers array
-                    $studentAnswers[] = $studentAnswer;
-
-                    // Forming correct mark text input field name: q + questionusageid : question's slot + _mark
-                    $inputNames[] = "q" . $question_attempt->questionusageid . ":" . $question_attempt->slot . "_-mark";
-
-                    error_log("User ID: $userid, Student Answer: $studentAnswer, Reference Answer: $referenceAnswer, Input Name: $inputNames[-1]");
-                }
-            }
-
-            // Closing of record's sets
-            $quizattempt_steps->close();
-        }
-
-        // Closing of record's sets
-        $question_attempts->close();
-
-        // API request preparation
-        $data = [
-            'referenceAnswer' => $referenceAnswer,
-            'studentAnswers'  => $studentAnswers
-        ];
+        $inputNames = $data['inputNames'];
 
         error_log('Data prepared: ' . print_r($data, true));
 
-        // Obtaining API settings
         $apiendpoint = get_config('local_asystgrade', 'apiendpoint');
         if (!$apiendpoint) {
             $apiendpoint = 'http://127.0.0.1:5000/api/autograde'; // Default setting
@@ -124,15 +60,14 @@ function local_asystgrade_before_footer()
 
         error_log('APIendpoint: ' . $apiendpoint);
 
-        // Initializing API client
         try {
-            $apiClient = new client($apiendpoint);
+            $httpClient = new http_client();
+            $apiClient = client::getInstance($apiendpoint, $httpClient);
             error_log('ApiClient initiated.');
 
-            // Sending data on API and obtaining auto grades
             error_log('Sending data to API and getting grade');
             $response = $apiClient->send_data($data);
-            $grades   = json_decode($response, true);
+            $grades = json_decode($response, true);
 
             error_log('Grade obtained: ' . print_r($grades, true));
         } catch (Exception $e) {
@@ -142,36 +77,96 @@ function local_asystgrade_before_footer()
 
         error_log('After API call');
 
-        // Check grades existence and pasting them at grade input fields through JavaScript DOM manipulations
-        $script = "
-            <script type='text/javascript'>
-                document.addEventListener('DOMContentLoaded', function() {";
-        foreach ($grades as $index => $grade) {
-            if (isset($grade['predicted_grade'])) {
-                $predicted_grade = $grade['predicted_grade'] == 'correct' ? 1 : 0;
-                // How forms param name="q2:1_-mark" see at https://github.com/moodle/moodle/blob/main/question/behaviour/rendererbase.php#L132
-                // and https://github.com/moodle/moodle/blob/main/question/engine/questionattempt.php#L381 , L407
-                $input_name = $inputNames[$index]; // Q is an question attempt -> ID of mdl_quiz_attempts, :1_ is question attempt -> step
-                $script     .= "
-                                console.log('Trying to update input: {$input_name} with grade: {$predicted_grade}');
-                                var gradeInput = document.querySelector('input[name=\"{$input_name}\"]');
-                                if (gradeInput) {
-                                    console.log('Found input: {$input_name}');
-                                    gradeInput.value = '{$predicted_grade}';
-                                } else {
-                                    console.log('Input not found: {$input_name}');
-                                }";
-            }
-        }
-        $script .= "
-            });
-        </script>";
+        pasteGradedMarks($grades, $inputNames);
 
-        echo $script;
         error_log('URL matches /mod/quiz/report.php in page_init');
     }
 }
 
+/**
+ * Adds JavasScript scrypt to update marks
+ *
+ * @param mixed $grades
+ * @param mixed $inputNames
+ * @return void
+ */
+function pasteGradedMarks(mixed $grades, mixed $inputNames): void
+{
+    echo generate_script($grades, $inputNames);;
+}
+
+/**
+ * @param QuizQuery $database
+ * @param $question_attempts
+ * @param $referenceAnswer
+ * @return array
+ */
+function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAnswer): array
+{
+    $studentAnswers = [];
+    $inputNames = [];
+
+    foreach ($question_attempts as $question_attempt) {
+        $quizattempt_steps = $database->get_attempt_steps($question_attempt->id);
+
+        foreach ($quizattempt_steps as $quizattempt_step) {
+            if ($quizattempt_step->state === 'complete') {
+                $studentAnswer = $database->get_student_answer($quizattempt_step->id);
+                $studentAnswers[] = $studentAnswer;
+                $inputNames[] = "q" . $question_attempt->questionusageid . ":" . $question_attempt->slot . "_-mark";
+
+                error_log("Student Answer: $studentAnswer, Input Name: " . end($inputNames));
+            }
+        }
+
+        $quizattempt_steps->close();
+    }
+
+    $question_attempts->close();
+
+    return [
+        'referenceAnswer' => $referenceAnswer,
+        'studentAnswers' => $studentAnswers,
+        'inputNames' => $inputNames
+    ];
+}
+
+/**
+ * Builds JavasScript scrypt to update marks using DOM manipulations
+ *
+ * @param $grades
+ * @param $inputNames
+ * @return string
+ */
+function generate_script($grades, $inputNames) {
+    $script = "<script type='text/javascript'>
+        document.addEventListener('DOMContentLoaded', function() {";
+
+    foreach ($grades as $index => $grade) {
+        if (isset($grade['predicted_grade'])) {
+            $predicted_grade = $grade['predicted_grade'] == 'correct' ? 1 : 0;
+            $input_name = $inputNames[$index];
+            $script .= "
+                console.log('Trying to update input: {$input_name} with grade: {$predicted_grade}');
+                var gradeInput = document.querySelector('input[name=\"{$input_name}\"]');
+                if (gradeInput) {
+                    console.log('Found input: {$input_name}');
+                    gradeInput.value = '{$predicted_grade}';
+                } else {
+                    console.log('Input not found: {$input_name}');
+                }";
+        }
+    }
+
+    $script .= "});
+    </script>";
+
+    return $script;
+}
+
+/**
+ * Autoloader registration
+ */
 spl_autoload_register(function ($classname) {
     // Check if the class name starts with our plugin's namespace
     if (strpos($classname, 'local_asystgrade\\') === 0) {
