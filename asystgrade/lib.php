@@ -53,13 +53,15 @@ function local_asystgrade_before_footer()
         $referenceAnswer = $quizQuery->get_reference_answer($qid);
 
         $data = prepare_api_data($quizQuery, $question_attempts, $referenceAnswer);
-        foreach ($data['studentAnswers'] as $index => $studentAnswer) {
-            $userid = $data['studentIds'][$index];
-            if ($quizQuery->gradesExist($qid, $userid)) {
+
+        foreach (array_keys($data['studentData']) as $studentId) {
+            if ($quizQuery->gradesExist($qid, $studentId)) {
                 return;
             }
         }
-        $inputNames = $data['inputNames'];
+
+        $studentData = $data['studentData'];
+        $inputNames = array_column($studentData, 'inputName');
 
         error_log('Data prepared: ' . print_r($data, true));
 
@@ -76,7 +78,10 @@ function local_asystgrade_before_footer()
             error_log('ApiClient initiated.');
 
             error_log('Sending data to API and getting grade');
-            $response = $apiClient->send_data($data);
+            $response = $apiClient->send_data([
+                'referenceAnswer' => $data['referenceAnswer'],
+                'studentAnswers' => array_column($studentData, 'studentAnswer')
+            ]);
             $grades = json_decode($response, true);
 
             error_log('Grade obtained: ' . print_r($grades, true));
@@ -113,9 +118,7 @@ function pasteGradedMarks(mixed $grades, mixed $inputNames): void
  */
 function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAnswer): array
 {
-    $studentAnswers = [];
-    $inputNames = [];
-    $studentIds = [];
+    $studentData = [];
 
     foreach ($question_attempts as $question_attempt) {
         $quizattempt_steps = $database->get_attempt_steps($question_attempt->id);
@@ -123,10 +126,16 @@ function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAns
         foreach ($quizattempt_steps as $quizattempt_step) {
             if ($quizattempt_step->state === 'complete') {
                 $studentAnswer = $database->get_student_answer($quizattempt_step->id);
-                $studentAnswers[] = $studentAnswer;
-                $inputNames[] = "q" . $question_attempt->questionusageid . ":" . $question_attempt->slot . "_-mark";
-                $studentIds[] = $quizattempt_step->userid;
-                error_log("Student Answer: $studentAnswer, Input Name: " . end($inputNames));
+                $studentId = $quizattempt_step->userid;
+                $inputName = "q" . $question_attempt->questionusageid . ":" . $question_attempt->slot . "_-mark";
+
+                // Adding data to an associative array
+                $studentData[$studentId] = [
+                    'studentAnswer' => $studentAnswer,
+                    'inputName' => $inputName // identifying name for mark input field updating
+                ];
+
+                error_log("Student ID: $studentId, Student Answer: $studentAnswer, Input Name: $inputName");
             }
         }
 
@@ -137,9 +146,7 @@ function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAns
 
     return [
         'referenceAnswer' => $referenceAnswer,
-        'studentAnswers' => $studentAnswers,
-        'inputNames' => $inputNames,
-        'studentIds' => $studentIds
+        'studentData' => $studentData
     ];
 }
 
