@@ -20,9 +20,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-//use Exception;
-//use local_asystgrade\api\client;
-//require_once $dirroot . 'local_asystgrade\api\client.php';
+use local_asystgrade\api\client;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -38,7 +36,7 @@ function local_asystgrade_before_footer()
     global $PAGE, $DB;
 
     // Получение параметров из URL
-    $qid  = optional_param('qid', null, PARAM_INT);
+    $qid = optional_param('qid', null, PARAM_INT);
     $slot = optional_param('slot', false, PARAM_INT);
 
     if ($PAGE->url->compare(new moodle_url('/mod/quiz/report.php'), URL_MATCH_BASE) && $slot) {
@@ -63,9 +61,10 @@ function local_asystgrade_before_footer()
         )->graderinfo;
 
         $studentAnswers = [];
+        $inputNames = [];
         foreach ($question_attempts as $question_attempt) {
 
-            // Получение всех шагов для данного questionusageid
+            // Obtaining all steps for this questionusageid
             $quizattempt_steps = $DB->get_recordset(
                 'question_attempt_steps',
                 [
@@ -78,7 +77,7 @@ function local_asystgrade_before_footer()
             // Processing every quiz attempt step
             foreach ($quizattempt_steps as $quizattempt_step) {
                 if ($quizattempt_step->state === 'complete') {
-                    $userid        = $quizattempt_step->userid;
+                    $userid = $quizattempt_step->userid;
                     $attemptstepid = $quizattempt_step->id;
 
                     // Obtaining student's answer
@@ -95,7 +94,10 @@ function local_asystgrade_before_footer()
                     // Forming student's answers array
                     $studentAnswers[] = $studentAnswer;
 
-                    error_log("User ID: $userid, Student Answer: $studentAnswer, Reference Answer: $referenceAnswer");
+                    // Forming correct mark text input field name: q + questionusageid : question's slot + _mark
+                    $inputNames[] = "q" . $question_attempt->questionusageid . ":" . $question_attempt->slot . "_-mark";
+
+                    error_log("User ID: $userid, Student Answer: $studentAnswer, Reference Answer: $referenceAnswer, Input Name: $inputNames[-1]");
                 }
             }
 
@@ -124,7 +126,7 @@ function local_asystgrade_before_footer()
 
         // Initializing API client
         try {
-            $apiClient = new \local_asystgrade\api\client($apiendpoint);
+            $apiClient = new client($apiendpoint);
             error_log('ApiClient initiated.');
 
             // Sending data on API and obtaining auto grades
@@ -144,14 +146,13 @@ function local_asystgrade_before_footer()
         $script = "
             <script type='text/javascript'>
                 document.addEventListener('DOMContentLoaded', function() {";
-                    foreach ($grades as $index => $grade) {
-                        if (isset($grade['predicted_grade'])) {
-                            $predicted_grade = $grade['predicted_grade'] == 'correct' ? 1 : 0;
-                            // How forms param name="q2:1_-mark" see at https://github.com/moodle/moodle/blob/main/question/behaviour/rendererbase.php#L132
-                            // and https://github.com/moodle/moodle/blob/main/question/engine/questionattempt.php#L381 , L407
-                            // TODO: fix question attempt -> ID and question attempt -> step
-                            $input_name      = "q" . ($index + 2) . ":1_-mark"; // Q is an question attempt -> ID of mdl_quiz_attempts, :1_ is question attempt -> step
-                            $script          .= "
+        foreach ($grades as $index => $grade) {
+            if (isset($grade['predicted_grade'])) {
+                $predicted_grade = $grade['predicted_grade'] == 'correct' ? 1 : 0;
+                // How forms param name="q2:1_-mark" see at https://github.com/moodle/moodle/blob/main/question/behaviour/rendererbase.php#L132
+                // and https://github.com/moodle/moodle/blob/main/question/engine/questionattempt.php#L381 , L407
+                $input_name = $inputNames[$index]; // Q is an question attempt -> ID of mdl_quiz_attempts, :1_ is question attempt -> step
+                $script     .= "
                                 console.log('Trying to update input: {$input_name} with grade: {$predicted_grade}');
                                 var gradeInput = document.querySelector('input[name=\"{$input_name}\"]');
                                 if (gradeInput) {
@@ -160,8 +161,8 @@ function local_asystgrade_before_footer()
                                 } else {
                                     console.log('Input not found: {$input_name}');
                                 }";
-                        }
-                    }
+            }
+        }
         $script .= "
             });
         </script>";
@@ -174,7 +175,7 @@ function local_asystgrade_before_footer()
 spl_autoload_register(function ($classname) {
     // Check if the class name starts with our plugin's namespace
     if (strpos($classname, 'local_asystgrade\\') === 0) {
-        // Преобразуем пространство имен в путь
+        // Transforming the Namespace into the Path
         $classname = str_replace('local_asystgrade\\', '', $classname);
         $classname = str_replace('\\', DIRECTORY_SEPARATOR, $classname);
         $filepath  = __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $classname . '.php';

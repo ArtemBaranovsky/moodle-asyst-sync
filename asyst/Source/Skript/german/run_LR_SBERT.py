@@ -14,11 +14,21 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_validate, cross_val_predict
 
+"""
+This script has been adapted from the original script authored by Yunus Eryilmaz.
+
+This script has been modified to adapt the source and structure of input-output data
+for specific use case (data is given as params, result returns as an array instead of files).
+"""
+
 __author__ = "Yunus Eryilmaz"
 __version__ = "1.0"
 __date__ = "21.07.2021"
 __source__ = "https://pypi.org/project/sentence-transformers/0.3.0/"
-
+__source__ = "https://transfer.hft-stuttgart.de/gitlab/ulrike.pado/ASYST/-/blob/main/Source/Skript/german/run_LR_SBERT.py"
+__adapted_by__ = "Artem Baranovskyi"
+__adaptation_date__ = "14.09.2024"
+__adaptation_version__ = "1.0"
 
 
 def process_data(data):
@@ -26,7 +36,6 @@ def process_data(data):
 
     parser.add_argument(
         "--model_dir",
-        # default=None,
         default="/var/www/html/moodle/asyst/Source/Skript/german/models",
         type=str,
         required=False,
