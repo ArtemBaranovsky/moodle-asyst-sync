@@ -10,3 +10,4 @@
 $string['pluginname']       = 'ASYST API Moodle integration plugin';
 $string['apiendpoint']      = 'API Endpoint';
 $string['apiendpoint_desc'] = 'The endpoint of the AsystGrade API.';
+$string['privacy:metadata'] = 'The AsystGrade plugin does not store any personal data.';
