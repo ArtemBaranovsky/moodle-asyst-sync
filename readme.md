@@ -24,3 +24,10 @@ route http://127.0.0.1:5000/api/autograde
 Now the preinstalled MOODLE LMS is available at https://www.moodle.loc
 
 **Note**: Bind https://www.moodle.loc to your localhost at **hosts** file depending on your OS.
+
+## Running Unit Tests
+To run only Plugin's Test please run at project's CLI:
+~~~bash
+vendor/bin/phpunit --testsuite local_asystgrade_testsuite
+~~~
+

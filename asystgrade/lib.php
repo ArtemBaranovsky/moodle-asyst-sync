@@ -37,7 +37,7 @@ function local_asystgrade_before_footer()
 {
     global $PAGE;
 
-    // Получение параметров из URL
+    // Obtaining parameters from URL
     $qid = optional_param('qid', null, PARAM_INT);
     $slot = optional_param('slot', false, PARAM_INT);
 

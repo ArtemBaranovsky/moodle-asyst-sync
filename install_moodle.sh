@@ -22,6 +22,7 @@ docker-compose exec moodle chmod -R 775 ${MOODLE_BASE_DIR_DATA}
 sleep 5
 docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
                                --wwwroot="${MOODLE_WWWROOT}" \
+                               --phpunit_dataroot="${MOODLE_WWWROOT}" \
                                --dataroot="${MOODLE_BASE_DIR_DATA}" \
                                --dbtype="mariadb" \
                                --dbname="${MOODLE_DATABASE_NAME}" \
@@ -46,6 +47,10 @@ docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
      echo "No database backup found. Skipping restore."
  fi
 
+# Composer installation to run phpunit tests
+ docker-compose exec moodle composer install
+# Next, configure PHPUnit for Moodle:
+ docker-compose exec moodle php admin/tool/phpunit/cli/init.php
 
  # Ensure correct ownership and permissions after installation
  docker-compose exec moodle chown -R www-data:www-data ${MOODLE_BASE_DIR}
