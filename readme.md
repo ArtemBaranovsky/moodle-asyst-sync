@@ -12,6 +12,10 @@ Use these creds to access Moodle admin page
 admin:rootpassword
 These creds could be easily changed as other environmental variables at .env
 
+After installation the Database will have all necessary entities to check plugins functionality (Cource / Test / Students / QuizAttempts ...).
+
+For demo, it's quite enough to get the link https://www.moodle.loc/mod/quiz/report.php?id=2&mode=grading&slot=1&qid=1&grade=needsgrading and wait for auto answer valuation.
+
 ## Development tips
 To facilitate DB monitoring at IDE set such a Database connection URL: 
 ~~~bash

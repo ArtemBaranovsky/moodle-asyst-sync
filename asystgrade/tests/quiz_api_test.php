@@ -13,6 +13,17 @@ require_once($CFG->dirroot . '/mod/quiz/tests/generator/lib.php');
 class quiz_api_test extends advanced_testcase
 {
 
+    protected function setUp(): void
+    {
+        global $DB;
+
+        $this->resetAfterTest();
+        parent::setUp();
+
+        $DB->execute('TRUNCATE TABLE {quiz_attempts}');
+        $DB->execute('TRUNCATE TABLE {quiz_slots}');
+    }
+
     /**
      * @throws Exception
      */
@@ -299,7 +310,6 @@ class quiz_api_test extends advanced_testcase
 
         return $DB->get_record('question_categories', array('id' => $categoryid));
     }
-
     private function create_quiz_attempt($quizid, $userid, $questionid, $exapmle_answers, $student_id)
     {
         global $DB;
@@ -384,16 +394,5 @@ class quiz_api_test extends advanced_testcase
             // Handling database write errors
             echo "Error inserting quiz attempt: " . $e->getMessage() . "\n";
         }
-    }
-
-    protected function setUp(): void
-    {
-        global $DB;
-
-        $this->resetAfterTest();
-        parent::setUp();
-
-        $DB->execute('TRUNCATE TABLE {quiz_attempts}');
-        $DB->execute('TRUNCATE TABLE {quiz_slots}');
     }
 }

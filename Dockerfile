@@ -17,7 +17,7 @@ ENV MOODLE_BASE_DIR_DATA ${MOODLE_BASE_DIR_DATA}
 
 # Installing necessary packages
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y apache2 php libapache2-mod-php php-mysqli php-mysql php-xml php-pdo php-pdo-mysql mariadb-client mariadb-server wget unzip p7zip-full python3 python3-pip iputils-ping php-mbstring graphviz aspell ghostscript clamav php8.2-pspell php8.2-curl php8.2-gd php8.2-intl php8.2-mysql php8.2-xml php8.2-xmlrpc php8.2-ldap php8.2-zip php8.2-soap php8.2-mbstring openssl git nano supervisor php-xdebug ca-certificates && \
+    apt-get install -y apache2 php libapache2-mod-php php-mysqli php-mysql php-xml php-pdo php-pdo-mysql mariadb-client mariadb-server wget unzip p7zip-full python3 python3-pip iputils-ping php-mbstring graphviz aspell ghostscript clamav php8.2-pspell php8.2-curl php8.2-gd php8.2-intl php8.2-mysql php8.2-xml php8.2-xmlrpc php8.2-ldap php8.2-zip php8.2-soap php8.2-mbstring openssl git nano supervisor php-xdebug && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Setting necessary php params
@@ -125,18 +125,6 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /etc/ssl/private/apache-selfsigned.key \
     -out /etc/ssl/certs/apache-selfsigned.crt \
     -subj "/C=EU/ST=Berlin/L=Berlin/O=HFT/CN=www.moodle.loc"
-
-# Установка корневых сертификатов
-RUN update-ca-certificates
-
-RUN curl -O https://curl.se/ca/cacert.pem \
-    && mv cacert.pem /etc/ssl/certs/cacert.pem \
-
-# Настройка php.ini для OpenSSL
-RUN echo "openssl.cafile=/etc/ssl/certs/ca-certificates.crt" >> /etc/php/8.2/cli/php.ini \
-    && echo "openssl.capath=/etc/ssl/certs" >> /etc/php/8.2/cli/php.ini \
-    && echo "openssl.cafile=/etc/ssl/certs/ca-certificates.crt" >> /etc/php/8.2/apache2/php.ini \
-    && echo "openssl.capath=/etc/ssl/certs" >> /etc/php/8.2/apache2/php.ini \
 
 # Configure SSL virtual host
 RUN echo  \

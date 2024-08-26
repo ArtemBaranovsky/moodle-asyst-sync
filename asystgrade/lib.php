@@ -36,7 +36,6 @@ defined('MOODLE_INTERNAL') || die();
 function local_asystgrade_before_footer()
 {
     global $PAGE;
-
     // Obtaining parameters from URL
     $qid = optional_param('qid', null, PARAM_INT);
     $slot = optional_param('slot', false, PARAM_INT);
@@ -51,7 +50,7 @@ function local_asystgrade_before_footer()
 
         $question_attempts = $quizQuery->get_question_attempts($qid, $slot);
         $referenceAnswer = $quizQuery->get_reference_answer($qid);
-
+        $maxmark = (float)$question_attempts->current()->maxmark;
         $data = prepare_api_data($quizQuery, $question_attempts, $referenceAnswer);
 
         foreach (array_keys($data['studentData']) as $studentId) {
@@ -92,7 +91,7 @@ function local_asystgrade_before_footer()
 
         error_log('After API call');
 
-        pasteGradedMarks($grades, $inputNames);
+        pasteGradedMarks($grades, $inputNames, $maxmark);
 
         error_log('URL matches /mod/quiz/report.php in page_init');
     }
@@ -100,17 +99,20 @@ function local_asystgrade_before_footer()
 
 /**
  * Adds JavasScript scrypt to update marks
- *
- * @param mixed $grades
- * @param mixed $inputNames
+ * @param  array $grades
+ * @param  array $inputNames
+ * @param  float $maxmark
  * @return void
  */
-function pasteGradedMarks(mixed $grades, mixed $inputNames): void
+
+function pasteGradedMarks(array $grades, array $inputNames, float $maxmark): void
 {
-    echo generate_script($grades, $inputNames);;
+    echo generate_script($grades, $inputNames, $maxmark);
 }
 
 /**
+ * Processes question attempts and answers to prepare for API a data to estimate answers
+ *
  * @param QuizQuery $database
  * @param $question_attempts
  * @param $referenceAnswer
@@ -153,17 +155,18 @@ function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAns
 /**
  * Builds JavasScript scrypt to update marks using DOM manipulations
  *
- * @param $grades
- * @param $inputNames
+ * @param  array $grades
+ * @param  array $inputNames
+ * @param  float $maxmark
  * @return string
  */
-function generate_script($grades, $inputNames) {
+function generate_script(array $grades, array $inputNames, float $maxmark) {
     $script = "<script type='text/javascript'>
         document.addEventListener('DOMContentLoaded', function() {";
 
     foreach ($grades as $index => $grade) {
         if (isset($grade['predicted_grade'])) {
-            $predicted_grade = $grade['predicted_grade'] == 'correct' ? 1 : 0;
+            $predicted_grade = $grade['predicted_grade'] == 'correct' ? $maxmark : 0;
             $input_name = $inputNames[$index];
             $script .= "
                 console.log('Trying to update input: {$input_name} with grade: {$predicted_grade}');
