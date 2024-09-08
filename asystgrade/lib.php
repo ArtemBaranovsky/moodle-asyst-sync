@@ -22,7 +22,7 @@
 
 use local_asystgrade\api\client;
 use local_asystgrade\api\http_client;
-use local_asystgrade\db\QuizQuery;
+use local_asystgrade\db\quizquery;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -41,7 +41,7 @@ function local_asystgrade_before_footer()
     $slot = optional_param('slot', false, PARAM_INT);
 
     if ($PAGE->url->compare(new moodle_url('/mod/quiz/report.php'), URL_MATCH_BASE) && $slot) {
-        $quizQuery = new QuizQuery();
+        $quizQuery = new quizquery();
 
         if ($quizQuery->gradesExist($qid, $slot)) {
             error_log('Grades already exist in the database.');
@@ -113,12 +113,12 @@ function pasteGradedMarks(array $grades, array $inputNames, float $maxmark): voi
 /**
  * Processes question attempts and answers to prepare for API a data to estimate answers
  *
- * @param QuizQuery $database
+ * @param quizquery $database
  * @param $question_attempts
  * @param $referenceAnswer
  * @return array
  */
-function prepare_api_data(QuizQuery $database, $question_attempts, $referenceAnswer): array
+function prepare_api_data(quizquery $database, $question_attempts, $referenceAnswer): array
 {
     $studentData = [];
 
@@ -189,16 +189,16 @@ function generate_script(array $grades, array $inputNames, float $maxmark) {
 /**
  * Autoloader registration
  */
-spl_autoload_register(function ($classname) {
-    // Check if the class name starts with our plugin's namespace
-    if (strpos($classname, 'local_asystgrade\\') === 0) {
-        // Transforming the Namespace into the Path
-        $classname = str_replace('local_asystgrade\\', '', $classname);
-        $classname = str_replace('\\', DIRECTORY_SEPARATOR, $classname);
-        $filepath  = __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $classname . '.php';
-
-        if (file_exists($filepath)) {
-            require_once($filepath);
-        }
-    }
-});
+//spl_autoload_register(function ($classname) {
+//    // Check if the class name starts with our plugin's namespace
+//    if (strpos($classname, 'local_asystgrade\\') === 0) {
+//        // Transforming the Namespace into the Path
+//        $classname = str_replace('local_asystgrade\\', '', $classname);
+//        $classname = str_replace('\\', DIRECTORY_SEPARATOR, $classname);
+//        $filepath  = __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $classname . '.php';
+//
+//        if (file_exists($filepath)) {
+//            require_once($filepath);
+//        }
+//    }
+//});

@@ -1,7 +1,7 @@
 <?php
 namespace local_asystgrade\db;
 
-class QuizQuery implements QuizQueryInterface
+class quizquery implements quizquery_interface
 {
     private $db;
 

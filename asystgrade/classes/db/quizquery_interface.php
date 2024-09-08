@@ -2,7 +2,7 @@
 
 namespace local_asystgrade\db;
 
-interface QuizQueryInterface
+interface quizquery_interface
 {
     public function get_question_attempts($qid, $slot);
 

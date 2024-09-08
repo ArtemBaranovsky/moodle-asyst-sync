@@ -227,7 +227,6 @@ class quiz_api_test extends advanced_testcase
                 'referenceAnswer' => $referenceAnswer,
                 'studentAnswers'  => $studentAnswers
             ];
-//            var_dump($data);
 
             error_log("Data to send to API: " . print_r($data, true));
             $response = $apiClient->send_data($data);
