@@ -47,19 +47,17 @@ docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
      echo "No database backup found. Skipping restore."
  fi
 
+# Locale setting inside the Docker container
+docker-compose exec -u root moodle bash -c "apt-get update && apt-get install -y locales && \
+    echo 'en_AU.UTF-8 UTF-8' >> /etc/locale.gen && \
+    locale-gen && \
+    update-locale"
+
 # Composer installation to run phpunit tests
  docker-compose exec moodle php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
  docker-compose exec moodle php composer-setup.php --install-dir=/usr/local/bin --filename=composer
  docker-compose exec moodle php -r "unlink('composer-setup.php');"
- docker-compose exec moodle php composer install --no-interaction \
-                                                 --no-plugins \
-                                                 --no-scripts \
-                                                 --no-dev \
-                                                 --prefer-dist && composer dump-autoload
-
-docker-compose exec moodle apt-get update && apt-get install -y locales && \
-    echo "en_AU.UTF-8 UTF-8" >> /etc/locale.gen && \
-    locale-gen
+ docker-compose exec moodle bash -c "cd /app && /usr/local/bin/composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist && /usr/local/bin/composer dump-autoload"
 
 # Next, configure PHPUnit for Moodle:
  docker-compose exec moodle php admin/tool/phpunit/cli/init.php

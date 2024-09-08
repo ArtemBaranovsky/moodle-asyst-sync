@@ -325,7 +325,7 @@ class quiz_api_test extends advanced_testcase
             $question_attempt_step_id = $DB->insert_record('question_attempt_steps', $question_attempt_step);
 
             // Example of how to shorten the answer length
-            $answer_length  = strlen($exapmle_answers) - ($student_id * strlen($exapmle_answers) / 6); // Reduce the answer by 10 characters for each subsequent student
+            $answer_length  = strlen($exapmle_answers) - (int) ($student_id * strlen($exapmle_answers) / 6); // Reduce the answer by 10 characters for each subsequent student
             $student_answer = substr($exapmle_answers, 0, $answer_length);
 
             // Saving the answer text
