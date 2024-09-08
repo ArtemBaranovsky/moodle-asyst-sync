@@ -21,30 +21,24 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Setting necessary php params
-#RUN echo "mysql.default_socket=/run/mysqld/mysqld.sock" >> /etc/php/8.2/cli/php.ini
 RUN echo "mysql.default_socket=/run/mysqld/mysqld.sock" >> /etc/php/8.2/apache2/php.ini
 RUN echo "max_input_vars = 5000" >> /etc/php/8.2/apache2/php.ini
 RUN echo "max_input_vars = 5000" >> /etc/php/8.2/cli/php.ini
 
 # Setting Xdebug
-#RUN echo "zend_extension=xdebug.so" >> /etc/php/8.2/apache2/php.ini
-#RUN echo "xdebug.mode=debug" >> /etc/php/8.2/apache2/php.ini
-#RUN echo "xdebug.start_with_request=yes" >> /etc/php/8.2/apache2/php.ini
-#RUN echo "xdebug.client_host=host.docker.internal" >> /etc/php/8.2/apache2/php.ini
-#RUN echo "xdebug.client_port=9003" >> /etc/php/8.2/apache2/php.ini
+RUN echo "zend_extension=xdebug.so" >> /etc/php/8.2/apache2/php.ini
+RUN echo "xdebug.mode=debug" >> /etc/php/8.2/apache2/php.ini
+RUN echo "xdebug.start_with_request=yes" >> /etc/php/8.2/apache2/php.ini
+RUN echo "xdebug.client_host=host.docker.internal" >> /etc/php/8.2/apache2/php.ini
+RUN echo "xdebug.client_port=9003" >> /etc/php/8.2/apache2/php.ini
 
 RUN chmod 1777 /tmp
 
-# Installing Moodle Setting correct acces rules
-#RUN cd /var/www/html && mkdir -p moodle
-#RUN mkdir -p ${MOODLE_BASE_DIR}
 RUN echo ${MOODLE_BASE_DIR}
 RUN mkdir -p /var/www/html/moodle
 WORKDIR ${MOODLE_BASE_DIR}
 
-#RUN #mkdir -p ${MOODLE_BASE_DIR} && \
 RUN wget -qO-  https://packaging.moodle.org/stable403/moodle-4.3.4.tgz | tar xz -C ${MOODLE_BASE_DIR} --strip-components=1
-#RUN wget -qO- https://packaging.moodle.org/stable403/moodle-4.3.4.tgz | tar xz --strip-components=1 -C /var/www/html/moodle
 
 
 RUN chown -R www-data:www-data ${MOODLE_BASE_DIR} && \
@@ -55,10 +49,10 @@ RUN chown -R www-data:www-data ${MOODLE_BASE_DIR} && \
     chmod -R 755 ${MOODLE_BASE_DIR_DATA}
 
 # Copying of beeing developed Plugin
-COPY asystgrade ${MOODLE_BASE_DIR}/local/asystgrade
+RUN echo ${MOODLE_BASE_DIR}
+RUN mkdir ${MOODLE_BASE_DIR}/local/asystgrade
 
 # Setting correct acces rules for Plugin
-#RUN chown -R www-data:www-data ${MOODLE_BASE_DIR}/local/asystgrade && \
 RUN chmod -R 755 ${MOODLE_BASE_DIR}/local/asystgrade
 
 # Making Symlink for MariaDB Socket
@@ -127,7 +121,6 @@ RUN a2enmod ssl
 #RUN echo "127.0.0.1 ${MOODLE_WWWROOT##https://}" >> /etc/hosts
 
 #Opening ports
-#EXPOSE 80 443 5000
 EXPOSE 80 443
 
 # Running supervisord

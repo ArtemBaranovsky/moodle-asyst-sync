@@ -23,7 +23,7 @@ services:
       - ./.env
     restart: always
     build:  # Building own Moodle container from Dockerfile.
-      context: .  # The context of the build (where is Dockerfile)
+      context: ./moodle  # The context of the build (where is Dockerfile)
       dockerfile: Dockerfile
       args:
         - MOODLE_BASE_DIR=${MOODLE_BASE_DIR}
@@ -50,7 +50,7 @@ services:
 
   flask:
     build:
-      context: ./flask  # Папка с Dockerfile для Flask
+      context: ./flask  # The context of the Flask build (where is Dockerfile)
       dockerfile: Dockerfile
     env_file:
       - ./.env

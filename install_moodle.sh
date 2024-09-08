@@ -36,12 +36,12 @@ docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
                                --non-interactive
 
 # Check if database backup exists and restore it if it does
- BACKUP_FILE="moodle_backup.sql"
+ BACKUP_FILE="moodle/moodle_backup.sql"
  if [ -f "$BACKUP_FILE" ]; then
  #    docker-compose exec mariadb apt-get update && apt-get install -y mysql-client && rm -rf /var/lib/apt/lists/*
      docker-compose exec mariadb bash -c "apt-get update && apt-get install -y mysql-client && rm -rf /var/lib/apt/lists/*"
      echo "Database backup found. Restoring..."
-     docker-compose exec -T mariadb mysql -u ${MOODLE_DATABASE_USER} -p${MOODLE_DATABASE_PASSWORD} ${MOODLE_DATABASE_NAME} < moodle_backup.sql
+     docker-compose exec -T mariadb mysql -u ${MOODLE_DATABASE_USER} -p${MOODLE_DATABASE_PASSWORD} ${MOODLE_DATABASE_NAME} < moodle/moodle_backup.sql
      echo "Database restored from backup."
  else
      echo "No database backup found. Skipping restore."
