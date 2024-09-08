@@ -244,6 +244,7 @@ class quiz_api_test extends advanced_testcase
         // Check the result
         $this->assertNotEmpty($grades);
         $this->assertEquals($grades[0]['predicted_grade'], 'correct');
+        $this->assertEquals($grades[5]['predicted_grade'], 'incorrect');
         $this->assertEquals($grades[6]['predicted_grade'], 'incorrect');
     }
 
