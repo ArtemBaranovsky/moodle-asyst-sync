@@ -17,7 +17,7 @@ ENV MOODLE_BASE_DIR_DATA ${MOODLE_BASE_DIR_DATA}
 
 # Installing necessary packages
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y apache2 php libapache2-mod-php php-mysqli php-mysql php-xml php-pdo php-pdo-mysql mariadb-client mariadb-server wget unzip p7zip-full python3 python3-pip iputils-ping php-mbstring graphviz aspell ghostscript clamav php8.2-pspell php8.2-curl php8.2-gd php8.2-intl php8.2-mysql php8.2-xml php8.2-xmlrpc php8.2-ldap php8.2-zip php8.2-soap php8.2-mbstring openssl git nano supervisor php-xdebug && \
+    apt-get install -y apache2 php libapache2-mod-php php-mysqli php-mysql php-xml php-pdo php-pdo-mysql mariadb-client mariadb-server wget unzip p7zip-full iputils-ping php-mbstring graphviz aspell ghostscript clamav php8.2-pspell php8.2-curl php8.2-gd php8.2-intl php8.2-mysql php8.2-xml php8.2-xmlrpc php8.2-ldap php8.2-zip php8.2-soap php8.2-mbstring openssl git nano supervisor php-xdebug && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Setting necessary php params
@@ -33,51 +33,19 @@ RUN echo "max_input_vars = 5000" >> /etc/php/8.2/cli/php.ini
 #RUN echo "xdebug.client_host=host.docker.internal" >> /etc/php/8.2/apache2/php.ini
 #RUN echo "xdebug.client_port=9003" >> /etc/php/8.2/apache2/php.ini
 
-# Starting Apache server
 RUN chmod 1777 /tmp
 
-# Add necessary packages for adding Python 3 repository and installing curl
-RUN apt-get update && apt-get install -y curl software-properties-common gnupg2 dirmngr --no-install-recommends
-
-# Add the repository
-RUN add-apt-repository 'deb https://deb.debian.org/debian/dists/trixie/ trixie main'
-
-# Update package lists after adding the repository
-RUN apt-get update
-
-# Installing necessary Python dependencies & Flask
-RUN apt-get install -y python3-venv python3-pip python3-matplotlib
-RUN python3 -m venv /opt/myenv
-RUN /opt/myenv/bin/python3 -m pip install --upgrade pip
-#RUN /opt/myenv/bin/python3 -m pip install matplotlib Flask torch sklearn-learn
-COPY requirements.txt /opt/myenv/
-
-WORKDIR /var/www/html/moodle
-RUN /opt/myenv/bin/python3 -m pip install -r /opt/myenv/requirements.txt
-RUN /opt/myenv/bin/python3 -m pip install --upgrade setuptools wheel
-
-# Copy the api.py script into the container
-COPY api.py /var/www/html/moodle/api.py
-COPY install_moodle.sh /var/www/html/moodle/install_moodle.sh
-RUN chmod +x /var/www/html/moodle/install_moodle.sh
-
-RUN mkdir -p /asyst
-# Download and extract the ASYST archive
-#RUN curl -o asyst.zip -L https://transfer.hft-stuttgart.de/gitlab/ulrike.pado/ASYST/-/archive/main/ASYST-main.zip && \
-#    7z x asyst.zip -o/asyst && \
-#    mv /asyst/ASYST-main/* /asyst && \
-#    rm -rf /asyst/ASYST-main asyst.zip
-
-# Set permissions (if necessary)
-RUN chown -R www-data:www-data /asyst
-RUN chmod -R 755 /asyst
-
-COPY ./asyst /var/www/html/moodle/asyst
-RUN ln -s /var/www/html/moodle/asyst/Source/Skript /var/www/html/moodle/Skript
-
 # Installing Moodle Setting correct acces rules
-RUN mkdir -p ${MOODLE_BASE_DIR} && \
-    wget -qO-  https://packaging.moodle.org/stable403/moodle-4.3.4.tgz | tar xz -C ${MOODLE_BASE_DIR} --strip-components=1
+#RUN cd /var/www/html && mkdir -p moodle
+#RUN mkdir -p ${MOODLE_BASE_DIR}
+RUN echo ${MOODLE_BASE_DIR}
+RUN mkdir -p /var/www/html/moodle
+WORKDIR ${MOODLE_BASE_DIR}
+
+#RUN #mkdir -p ${MOODLE_BASE_DIR} && \
+RUN wget -qO-  https://packaging.moodle.org/stable403/moodle-4.3.4.tgz | tar xz -C ${MOODLE_BASE_DIR} --strip-components=1
+#RUN wget -qO- https://packaging.moodle.org/stable403/moodle-4.3.4.tgz | tar xz --strip-components=1 -C /var/www/html/moodle
+
 
 RUN chown -R www-data:www-data ${MOODLE_BASE_DIR} && \
     find ${MOODLE_BASE_DIR} -type d -exec chmod 755 {} \; && \
@@ -159,10 +127,8 @@ RUN a2enmod ssl
 #RUN echo "127.0.0.1 ${MOODLE_WWWROOT##https://}" >> /etc/hosts
 
 #Opening ports
-EXPOSE 80 443 5000
-
-# Setting up supervisord
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#EXPOSE 80 443 5000
+EXPOSE 80 443
 
 # Running supervisord
-CMD ["/usr/bin/supervisord"]
+CMD ["apache2ctl", "-D", "FOREGROUND"]

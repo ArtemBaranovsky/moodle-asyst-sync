@@ -74,14 +74,15 @@ docker-compose exec moodle apt-get update && apt-get install -y locales && \
  sudo chown -R $(whoami):$(whoami) ./asystgrade
 
 # Create the run_sag script file
-docker-compose exec moodle bash -c 'cat <<EOF > /usr/local/bin/run_sag
+docker-compose exec flask bash -c 'cat <<EOF > /usr/local/bin/run_sag
 #!/bin/bash
 . /opt/myenv/bin/activate
-cd ${MOODLE_BASE_DIR}/asyst/Source/Skript/german
-/opt/myenv/bin/python3 ${MOODLE_BASE_DIR}/api.py
+#cd ${MOODLE_BASE_DIR}/asyst/Source/Skript/german
+cd /app/asyst/Source/Skript/german
+/opt/myenv/bin/python3 /app/api.py
 EOF'
 
 
 # Make the script executable & run it
-docker-compose exec moodle chmod +x /usr/local/bin/run_sag
-docker-compose exec moodle /usr/local/bin/run_sag
+docker-compose exec flask chmod +x /usr/local/bin/run_sag
+docker-compose exec flask /usr/local/bin/run_sag

@@ -36,7 +36,6 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 5000:5000
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -49,6 +48,22 @@ services:
     networks:
       - network  # Adding the network communication between containers
 
+  flask:
+    build:
+      context: ./flask  # Папка с Dockerfile для Flask
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    restart: always
+    ports:
+      - 5000:5000
+    volumes:
+      - ./flask:/app
+    depends_on:
+      - mariadb
+    networks:
+      - network
+
 volumes: # Defining local volumes
   moodledata:
     driver: local
@@ -57,6 +72,8 @@ volumes: # Defining local volumes
   moodle_data:
     driver: local
   asystgrade:
+    driver: local
+  flask:
     driver: local
 
 networks:
