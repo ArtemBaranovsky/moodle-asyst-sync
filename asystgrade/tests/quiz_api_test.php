@@ -212,7 +212,7 @@ class quiz_api_test extends advanced_testcase
 
         $apiendpoint = get_config('local_asystgrade', 'apiendpoint');
         if (!$apiendpoint) {
-            $apiendpoint = 'http://127.0.0.1:5000/api/autograde'; // Default setting
+            $apiendpoint = 'http://flask:5000/api/autograde'; // Default setting
         }
 
         error_log('APIendpoint: ' . $apiendpoint);
@@ -227,7 +227,7 @@ class quiz_api_test extends advanced_testcase
                 'referenceAnswer' => $referenceAnswer,
                 'studentAnswers'  => $studentAnswers
             ];
-            var_dump($data);
+//            var_dump($data);
 
             error_log("Data to send to API: " . print_r($data, true));
             $response = $apiClient->send_data($data);
