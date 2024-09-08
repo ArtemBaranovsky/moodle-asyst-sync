@@ -66,7 +66,7 @@ function local_asystgrade_before_footer()
 
         $apiendpoint = get_config('local_asystgrade', 'apiendpoint');
         if (!$apiendpoint) {
-            $apiendpoint = 'http://127.0.0.1:5000/api/autograde'; // Default setting
+            $apiendpoint = 'http://flask:5000/api/autograde'; // Default setting, flask is the name of flask container
         }
 
         error_log('APIendpoint: ' . $apiendpoint);

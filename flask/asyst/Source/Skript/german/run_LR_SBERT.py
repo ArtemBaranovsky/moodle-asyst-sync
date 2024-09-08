@@ -36,7 +36,7 @@ def process_data(data):
 
     parser.add_argument(
         "--model_dir",
-        default="/var/www/html/moodle/asyst/Source/Skript/german/models",
+        default="/app/asyst/Source/Skript/german/models",
         type=str,
         required=False,
         help="The directory where the ML models are stored.",
@@ -65,7 +65,7 @@ def process_data(data):
     X_test = computed_simis_test
 
     # UP: read pre-trained LR model
-    clf_log = pickle.load(open("/var/www/html/moodle/asyst/Source/Skript/german/models/clf_BERT.pickle", "rb"))
+    clf_log = pickle.load(open("/app/asyst/Source/Skript/german/models/clf_BERT.pickle", "rb"))
     predictions = clf_log.predict(X_test)
 
 
