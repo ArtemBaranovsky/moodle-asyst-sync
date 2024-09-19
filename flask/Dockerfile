@@ -11,15 +11,13 @@ RUN python3 -m venv /opt/myenv
 ENV PATH="/opt/myenv/bin:$PATH"
 
 WORKDIR /app
-RUN ls -la /app
 COPY . /app
+COPY ./asyst /app/asyst
 
 # Installing dependencies
 RUN /opt/myenv/bin/pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r /app/requirements.txt
-#RUN /opt/myenv/bin/python3 -m pip install -r /app/requirements.txt
 RUN /opt/myenv/bin/python3 -m pip install --upgrade setuptools wheel
 
-COPY ./asyst /app/asyst
 
 # Set permissions
 RUN chown -R www-data:www-data /app/asyst

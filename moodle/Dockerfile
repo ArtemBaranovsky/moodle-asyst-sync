@@ -29,8 +29,10 @@ RUN echo "max_input_vars = 5000" >> /etc/php/8.2/cli/php.ini
 RUN echo "zend_extension=xdebug.so" >> /etc/php/8.2/apache2/php.ini
 RUN echo "xdebug.mode=debug" >> /etc/php/8.2/apache2/php.ini
 RUN echo "xdebug.start_with_request=yes" >> /etc/php/8.2/apache2/php.ini
-RUN echo "xdebug.client_host=host.docker.internal" >> /etc/php/8.2/apache2/php.ini
+#RUN echo "xdebug.client_host=host.docker.internal" >> /etc/php/8.2/apache2/php.ini
+RUN echo "xdebug.client_host=127.0.0.1" >> /etc/php/8.2/apache2/php.ini
 RUN echo "xdebug.client_port=9003" >> /etc/php/8.2/apache2/php.ini
+RUN echo "xdebug.log=/tmp/xdebug.log" >> /etc/php/8.2/apache2/php.ini
 
 RUN chmod 1777 /tmp
 
@@ -123,5 +125,5 @@ RUN a2enmod ssl
 #Opening ports
 EXPOSE 80 443
 
-# Running supervisord
+# Launch Apache server in foreground
 CMD ["apache2ctl", "-D", "FOREGROUND"]

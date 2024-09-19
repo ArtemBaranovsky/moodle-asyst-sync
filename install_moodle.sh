@@ -54,10 +54,14 @@ docker-compose exec -u root moodle bash -c "apt-get update && apt-get install -y
     update-locale"
 
 # Composer installation to run phpunit tests
- docker-compose exec moodle php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
- docker-compose exec moodle php composer-setup.php --install-dir=/usr/local/bin --filename=composer
- docker-compose exec moodle php -r "unlink('composer-setup.php');"
- docker-compose exec moodle bash -c "cd /app && /usr/local/bin/composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist && /usr/local/bin/composer dump-autoload"
+docker-compose exec moodle bash -c "
+    php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\" &&
+    php composer-setup.php --install-dir=/usr/local/bin --filename=composer &&
+    php -r \"unlink('composer-setup.php');\" &&
+    cd /app &&
+    /usr/local/bin/composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist &&
+    /usr/local/bin/composer dump-autoload
+"
 
 # Next, configure PHPUnit for Moodle:
  docker-compose exec moodle php admin/tool/phpunit/cli/init.php
@@ -80,7 +84,9 @@ cd /app/asyst/Source/Skript/german
 /opt/myenv/bin/python3 /app/api.py
 EOF'
 
-
 # Make the script executable & run it
 docker-compose exec flask chmod +x /usr/local/bin/run_sag
 docker-compose exec flask /usr/local/bin/run_sag
+
+# Adding cron-record at the Moodle container
+docker-compose exec -u root moodle bash -c "echo '* * * * * /usr/bin/php ${MOODLE_BASE_DIR}/admin/cli/cron.php >/dev/null 2>&1' >> /etc/crontabs/root && crontab /etc/crontabs/root"
