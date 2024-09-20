@@ -66,6 +66,23 @@ docker-compose exec moodle bash -c "
 # Next, configure PHPUnit for Moodle:
  docker-compose exec moodle php admin/tool/phpunit/cli/init.php
 
+# Define the path to the phpunit.xml file
+PHPUNIT_XML_PATH="/var/www/html/moodle/phpunit.xml"
+
+# Define the content to insert for your plugin's test suite
+TEST_SUITE_ENTRY='<testsuite name="Unit Tests">
+    <directory>local/asystgrade/tests</directory>
+</testsuite>'
+
+# Check if the plugin suite is already defined in phpunit.xml
+if grep -q "local/asystgrade/tests" "$PHPUNIT_XML_PATH"; then
+    echo "Test suite for asystgrade plugin already exists in phpunit.xml."
+else
+    # Use sed to insert the test suite entry right before @plugin_suites_end@
+    sed -i "/@plugin_suites_end@/i $TEST_SUITE_ENTRY" "$PHPUNIT_XML_PATH"
+    echo "Test suite for asystgrade plugin added to phpunit.xml."
+fi
+
  # Ensure correct ownership and permissions after installation
  docker-compose exec moodle chown -R www-data:www-data ${MOODLE_BASE_DIR}
  docker-compose exec moodle chmod -R 755 ${MOODLE_BASE_DIR}
