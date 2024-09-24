@@ -50,8 +50,7 @@ docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
 # Locale setting inside the Docker container
 docker-compose exec -u root moodle bash -c "apt-get update && apt-get install -y locales && \
     echo 'en_AU.UTF-8 UTF-8' >> /etc/locale.gen && \
-    locale-gen && \
-    update-locale"
+    locale-gen"
 
 # Composer installation to run phpunit tests
 docker-compose exec moodle bash -c "
