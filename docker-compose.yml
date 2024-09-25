@@ -33,6 +33,7 @@ services:
         - MOODLE_DATABASE_NAME=${MOODLE_DATABASE_NAME}
         - MOODLE_DATABASE_USER=${MOODLE_DATABASE_USER}
         - MOODLE_DATABASE_PASSWORD=${MOODLE_DATABASE_PASSWORD}
+        - MOODLE_PHPUNIT_DATAROOT=${MOODLE_PHPUNIT_DATAROOT}
     ports:
       - 80:80
       - 443:443
@@ -46,6 +47,7 @@ services:
       - ${PWD}/asystgrade:${MOODLE_BASE_DIR}/local/asystgrade  # Sync the plugin folder with the container
       - moodle_data:${MOODLE_BASE_DIR}  # Volume for Moodle
       - moodledata:${MOODLE_BASE_DIR_DATA}  # Volume for Moodle data
+      - moodle_phpunit_data:${MOODLE_PHPUNIT_DATAROOT}
     networks:
       - network  # Adding the network communication between containers
 
@@ -75,6 +77,8 @@ volumes: # Defining local volumes
   asystgrade:
     driver: local
   flask:
+    driver: local
+  moodle_phpunit_data:
     driver: local
 
 networks:

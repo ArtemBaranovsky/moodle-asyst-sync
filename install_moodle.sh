@@ -17,12 +17,17 @@ docker-compose exec moodle mkdir -p ${MOODLE_BASE_DIR_DATA}/temp
 docker-compose exec moodle mkdir -p ${MOODLE_BASE_DIR_DATA}/trashdir
 docker-compose exec moodle chown -R www-data:www-data ${MOODLE_BASE_DIR_DATA}
 docker-compose exec moodle chmod -R 775 ${MOODLE_BASE_DIR_DATA}
+# Ensure correct ownership and permissions after installation
+docker-compose exec moodle chown -R www-data:www-data ${MOODLE_BASE_DIR}
+docker-compose exec moodle chmod -R 755 ${MOODLE_BASE_DIR}
+docker-compose exec moodle mkdir -p ${MOODLE_PHPUNIT_DATAROOT}
+docker-compose exec moodle chown -R www-data:www-data ${MOODLE_PHPUNIT_DATAROOT}
+docker-compose exec moodle chmod -R 755 ${MOODLE_PHPUNIT_DATAROOT}
 
 # Install Moodle
 sleep 5
 docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
                                --wwwroot="${MOODLE_WWWROOT}" \
-                               --phpunit_dataroot="${MOODLE_WWWROOT}" \
                                --dataroot="${MOODLE_BASE_DIR_DATA}" \
                                --dbtype="mariadb" \
                                --dbname="${MOODLE_DATABASE_NAME}" \
@@ -34,6 +39,10 @@ docker-compose exec moodle php ${MOODLE_BASE_DIR}/admin/cli/install.php \
                                --shortname="${MOODLE_SHORTNAME}" \
                                --agree-license \
                                --non-interactive
+
+# Add phpunit_dataroot & phpunit_prefix to config.php
+docker-compose exec moodle bash -c "echo '\$CFG->phpunit_dataroot = \"${MOODLE_PHPUNIT_DATAROOT}\";' >> ${MOODLE_BASE_DIR}/config.php"
+docker-compose exec moodle bash -c "echo '\$CFG->phpunit_prefix = \"phpu_\";' >> ${MOODLE_BASE_DIR}/config.php"
 
 # Check if database backup exists and restore it if it does
  BACKUP_FILE="moodle/moodle_backup.sql"
@@ -57,21 +66,26 @@ docker-compose exec moodle bash -c "
     php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\" &&
     php composer-setup.php --install-dir=/usr/local/bin --filename=composer &&
     php -r \"unlink('composer-setup.php');\" &&
-    cd /app &&
+    cd app &&
     /usr/local/bin/composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist &&
     /usr/local/bin/composer dump-autoload
 "
 
 # Next, configure PHPUnit for Moodle:
- docker-compose exec moodle php admin/tool/phpunit/cli/init.php
+docker-compose exec moodle php admin/tool/phpunit/cli/init.php
 
 # Define the path to the phpunit.xml file
 PHPUNIT_XML_PATH="/var/www/html/moodle/phpunit.xml"
 
 # Define the content to insert for your plugin's test suite
-TEST_SUITE_ENTRY='<testsuite name="Unit Tests">
-    <directory>local/asystgrade/tests</directory>
-</testsuite>'
+TEST_SUITE_ENTRY='<testsuite name="Unit Tests">\n    <directory>local/asystgrade/tests</directory>\n</testsuite>'
+
+# Check if phpunit.xml exists
+if [ -f "$PHPUNIT_XML_PATH" ]; then
+    echo "$PHPUNIT_XML_PATH exists."
+else
+    echo "$PHPUNIT_XML_PATH does not exist."
+fi
 
 # Check if the plugin suite is already defined in phpunit.xml
 if grep -q "local/asystgrade/tests" "$PHPUNIT_XML_PATH"; then
@@ -81,10 +95,6 @@ else
     sed -i "/@plugin_suites_end@/i $TEST_SUITE_ENTRY" "$PHPUNIT_XML_PATH"
     echo "Test suite for asystgrade plugin added to phpunit.xml."
 fi
-
- # Ensure correct ownership and permissions after installation
- docker-compose exec moodle chown -R www-data:www-data ${MOODLE_BASE_DIR}
- docker-compose exec moodle chmod -R 755 ${MOODLE_BASE_DIR}
 
  # Set correct access rules for the plugin
  docker-compose exec moodle chown -R www-data:www-data ${MOODLE_BASE_DIR}/local/asystgrade
@@ -105,4 +115,9 @@ docker-compose exec flask chmod +x /usr/local/bin/run_sag
 docker-compose exec flask /usr/local/bin/run_sag
 
 # Adding cron-record at the Moodle container
-docker-compose exec -u root moodle bash -c "echo '* * * * * /usr/bin/php ${MOODLE_BASE_DIR}/admin/cli/cron.php >/dev/null 2>&1' >> /etc/crontabs/root && crontab /etc/crontabs/root"
+docker-compose exec -u root moodle bash -c "
+  mkdir -p /etc/crontabs &&
+  touch /etc/crontabs/root &&
+  echo '* * * * * /usr/bin/php ${MOODLE_BASE_DIR}/admin/cli/cron.php >/dev/null 2>&1' >> /etc/crontabs/root &&
+  crontab /etc/crontabs/root
+"
