@@ -122,6 +122,46 @@ class quiz_api_test {
 }
 ```
 
+## ML Backend Components' Diagram
+```mermaid
+classDiagram
+class FlaskApp {
++Flask app
++get_data()
+}
+class run_LR_SBERT {
++process_data(data)
++similarity(sentence_embeddings1, sentence_embeddings2)
+}
+class SentenceTransformer {
++encode(sentences, convert_to_tensor, show_progress_bar)
+}
+class LogisticRegression {
++predict(X_test)
+}
+
+class models {
++Transformer(model_name)
++Pooling(word_embedding_dimension, pooling_mode_mean_tokens, pooling_mode_cls_token, pooling_mode_max_tokens)
+}
+
+FlaskApp --> run_LR_SBERT : Calls process_data()
+FlaskApp <-- run_LR_SBERT : Receives process_data()
+run_LR_SBERT --> SentenceTransformer : Uses for sentence encoding
+run_LR_SBERT --> LogisticRegression : Uses for prediction
+run_LR_SBERT --> models : Uses Transformer and Pooling modules
+
+class DiagramInteractions {
+FlaskApp receives POST /api/autograde
+FlaskApp extracts JSON data from request
+FlaskApp calls process_data() in run_LR_SBERT
+run_LR_SBERT encodes reference and student answers using SentenceTransformer
+run_LR_SBERT calculates similarity between embeddings
+run_LR_SBERT uses LogisticRegression model to predict correctness
+FlaskApp returns predictions as JSON response
+}
+```
+
 ## How to wrap up solution
 ###  Full Solution with Moodle Server (demo with all Moodle+MariaDb+Flask):
 To use ASYST with a universal BERT model based on the German language, run these commands in the CLI. 
@@ -222,8 +262,8 @@ Now the preinstalled Moodle LMS is available at https://www.moodle.loc
 
 **Note**: Bind https://www.moodle.loc to your localhost at **hosts** file depending on your OS.
 
-## Running Unit Tests
-To run only the plugin’s tests, execute in the project’s CLI (inside the container):
+## Running Integration Test
+To run only the plugin’s test, execute in the project’s CLI (inside the container):
 ~~~bash
 vendor/bin/phpunit --testsuite local_asystgrade_testsuite
 ~~~
