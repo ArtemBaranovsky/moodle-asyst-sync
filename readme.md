@@ -1,36 +1,183 @@
-### How to wrap up and run Moodle Server:
+# ASYSTGRADE Moodle Plugin
 
-To use ASYST with universal BERT model based on German language just Run these commands at CLI.
+This plugin, along with the relevant Docker infrastructure, is designed to facilitate teachers’ activities in evaluating students’ short answers. 
+The plugin uses the ASYST grading [script](https://transfer.hft-stuttgart.de/gitlab/ulrike.pado/ASYST) modified to function as a web endpoint.
+The plugin requires the ASYST ML Backend to be isolated in a standalone Docker container accessible via the local network or the Internet.
+ASYSTGRADE Moodle Plugin runs each time the teacher reaches some manual grading page (a part of [Essay auto-grade plugin](https://moodle.org/plugins/qtype_essayautograde) maintained by Gordon Bateson)!
+
+This solution is part of the Master’s Thesis titled “Integration of a Machine Learning Backend into Assessment Processes in a PHP-based Educational Environment” at the University of Applied Sciences Stuttgart, within the Software Technology course, by Artem Baranovskyi.
+
+## Plugin and ASYST ML Backend Interaction Concept
+```mermaid
+flowchart TD
+    A[Moodle LMS] --> B[PHP Plugin]
+    B -->|HTTP Request| C[Flask API Python Backend]
+    C --> D[Pre-trained BERT Model]
+    C --> E[Logistic Regression Model]
+    C --> F[Sentence Transformers]
+    D --> C
+    E --> C
+    F --> C
+    C -->|Response| B
+    B -->|Processed Results| A
+
+subgraph Backend-Services
+    C
+    D
+    E
+    F
+end
+
+subgraph Docker Containers
+    Backend-Services
+end
+
+B --> G{cURL}
+```
+
+## Description of Use Case processes at Sequence Diagram
+```mermaid
+sequenceDiagram
+    participant Student
+    participant Teacher
+    participant Moodle
+    participant PHP Plugin
+    participant Flask API
+    participant BERT Model
+
+    Student->>Moodle: Submits Answer
+    Teacher->>PHP Plugin: Visit Manual Grading Page
+    Moodle->>PHP Plugin: Answers GET Params ($qid, $slot)
+    PHP Plugin->>Flask API: Sends HTTP POST Request
+    Flask API->>BERT Model: Processes Data (Embeddings)
+    BERT Model-->>Flask API: Returns Processed Result
+    Flask API-->>PHP Plugin: Sends Grading Response
+    PHP Plugin-->>Moodle: Displays Predicted Grade
+    Moodle-->>Teacher: Displays Predicted Grade
+    Teacher->>Moodle: Grade (Regrade) Answer
+    Moodle-->>Student: Displays Final Result
+```
+
+## Plugin components' Diagram
+```mermaid
+classDiagram
+class local_asystgrade_lib {
++void local_asystgrade_before_footer()
++void pasteGradedMarks(array grades, array inputNames, float maxmark) // DOM Manipulation
++array prepare_api_data(quizquery database, question_attempts, referenceAnswer)
++string generate_script(array grades, array inputNames, float maxmark)
+}
+
+class quizquery {
++get_question_attempts($qid, $slot)
++get_reference_answer($qid)
++get_attempt_steps($question_attempt_id)
++get_student_answer($attemptstepid)
++bool gradesExist(int quizid, int userid)
+}
+
+class client {
++send_data(array $data): bool|string
++getInstance(string $endpoint, http_client_interface $httpClient): client
+-string endpoint
+-http_client_interface httpClient
+-static ?client instance
+}
+
+class http_client {
++post(string $url, array $data): bool|string
+}
+
+class http_client_interface {
++post(string $url, array $data): bool|string
+}
+
+class provider {
++string get_reason()
+}
+
+class DB {
+    
+}
+
+local_asystgrade_lib <--> quizquery : interacts with
+local_asystgrade_lib --> client : sends data to
+local_asystgrade_lib <-- client : get response from
+client --> http_client_interface : implements
+client --> http_client : uses
+http_client_interface <|-- http_client : implements
+quizquery --> quizquery_interface : implements
+quizquery --> DB : uses
+provider --> core_privacy_local_metadata_null_provider : implements
+
+quiz_api_test --> client : sends data to
+quiz_api_test <-- client : get response from
+class quiz_api_test {
++setUp()
++test_quiz_api()
++create_question_category()
++create_quiz_attempt()
+}
+```
+
+## How to wrap up solution
+###  Full Solution with Moodle Server (demo with all Moodle+MariaDb+Flask):
+To use ASYST with a universal BERT model based on the German language, run these commands in the CLI. 
+They will build and run all 3 containers (Moodle+MariaDb+Flask) for demo, development, and testing purposes along with the Moodle environment installation.
 
 ~~~bash
 docker-compose up -d --build && ./install_moodle.sh
 ~~~
 
-Infrastructure rolls up a Brand New Moodle instance. If you already have Moodle LMS, you could use it's DB backup at this project. Just paste it at root folder and rename it to moodle_backup.sql 
+This will set up a brand new Moodle instance with ready to go PHPUnit test environment.
+If you already have a Moodle LMS, you can use its database backup in this project. 
+Just place it in the /moodle folder and rename it to moodle_backup.sql.
 
-Use these creds to access Moodle admin page
-admin:rootpassword
-These creds could be easily changed as other environmental variables at .env
+#### Use these credentials to access the Moodle admin page:
 
-After installation the Database will have all necessary entities to check plugins functionality (Cource / Test / Students / QuizAttempts ...).
+**admin**:*rootpassword*
 
-For demo, it's quite enough to get the link https://www.moodle.loc/mod/quiz/report.php?id=2&mode=grading&slot=1&qid=1&grade=needsgrading and wait for auto answer valuation.
+These credentials can be easily changed along with other environment variables in the [.env](https://github.com/ArtemBaranovsky/moodle-asyst-sync/blob/master/.env) file.
+
+After installation, the database will have all the necessary entities to check the plugin’s functionality (Courses, Tests, Students, Quiz Attempts, etc.).
+
+For a demo, simply visit the link: https://www.moodle.loc/mod/quiz/report.php?id=2&mode=grading&slot=1&qid=1&grade=needsgrading and wait for the auto answer evaluation.
+Current plugin implementation starts automatically for a batch of answers right at **Essay (auto-grade)**  page.
+Teacher can accept propose evaluated mark or regrade it.
+ASYSTGRADE Plugin didn't save anything to DB on his own! 
+
+## Using only ASYST API on Flask
+It is not necessary to build full solution if you want just use the plugin at your existing Moodle LMS. 
+
+To build only the Flask ASYST microservice, run:
+
+~~~bash
+docker-compose up flask -d
+~~~
+
+If a standalone Flask image is ready, it can be run with (-p 5000:5000 can be omitted):
+
+~~~bash
+docker run -p 5000:5000 asyst-flask
+~~~
+
+If ASYST ML Backend is being used alone, ASYSTGRADE plugin should be copied from /asystgrade with the folder to ../moodle/local/ folder for local plugins. 
 
 ## Development tips
-To facilitate DB monitoring at IDE set such a Database connection URL: 
+To facilitate DB monitoring in your IDE, set the following database connection URL:
+
 ~~~bash
 jdbc:mariadb://localhost:3306/moodle
 ~~~
 
-It is suggested to use our moodle plugin to communicate with Flask-based ASYST script using such a
-route http://127.0.0.1:5000/api/autograde
+It is suggested to use our Moodle plugin to communicate with the Flask-based ASYST script using this route: http://127.0.0.1:5000/api/autograde
 
-Now the preinstalled MOODLE LMS is available at https://www.moodle.loc
+Now the preinstalled Moodle LMS is available at https://www.moodle.loc
 
 **Note**: Bind https://www.moodle.loc to your localhost at **hosts** file depending on your OS.
 
 ## Running Unit Tests
-To run only Plugin's Test please run at project's CLI (inside container):
+To run only the plugin’s tests, execute in the project’s CLI (inside the container):
 ~~~bash
 vendor/bin/phpunit --testsuite local_asystgrade_testsuite
 ~~~
@@ -38,4 +185,3 @@ or run outside it:
 ~~~bash
 docker-compose exec moodle vendor/bin/phpunit --testsuite local_asystgrade_testsuite
 ~~~
-

@@ -62,8 +62,6 @@ services:
       - 5000:5000
     volumes:
       - ./flask:/app
-    depends_on:
-      - mariadb
     networks:
       - network
 
