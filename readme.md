@@ -162,7 +162,7 @@ FlaskApp returns predictions as JSON response
 }
 ```
 
-## How to wrap up solution
+## How to roll out the solution
 ###  Full Solution with Moodle Server (demo with all Moodle+MariaDb+Flask):
 To use ASYST with a universal BERT model based on the German language, run these commands in the CLI. 
 They will build and run all 3 containers (Moodle+MariaDb+Flask) for demo, development, and testing purposes along with the Moodle environment installation.
