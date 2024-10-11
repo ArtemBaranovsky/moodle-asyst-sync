@@ -20,8 +20,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-use local_asystgrade\api\client;
-use local_asystgrade\api\http_client;
 use local_asystgrade\db\quizquery;
 
 defined('MOODLE_INTERNAL') || die();
@@ -62,52 +60,19 @@ function local_asystgrade_before_footer()
         $studentData = $data['studentData'];
         $inputNames = array_column($studentData, 'inputName');
 
-        error_log('Data prepared: ' . print_r($data, true));
+        $js_data = [
+                'apiendpoint' => 'http://flask:5000/api/autograde',
+                'formNames'   => $inputNames,
+                'maxmark'     => $maxmark,
+                'request'     => [
+                        'referenceAnswer' => $data['referenceAnswer'],
+                        'studentAnswers'  => array_column($studentData, 'studentAnswer')
+                ]
+        ];
 
-        $apiendpoint = get_config('local_asystgrade', 'apiendpoint');
-        if (!$apiendpoint) {
-            $apiendpoint = 'http://flask:5000/api/autograde'; // Default setting, flask is the name of flask container
-        }
-
-        error_log('APIendpoint: ' . $apiendpoint);
-
-        try {
-            $httpClient = new http_client();
-            $apiClient = client::getInstance($apiendpoint, $httpClient);
-            error_log('ApiClient initiated.');
-
-            error_log('Sending data to API and getting grade');
-            $response = $apiClient->send_data([
-                'referenceAnswer' => $data['referenceAnswer'],
-                'studentAnswers' => array_column($studentData, 'studentAnswer')
-            ]);
-            $grades = json_decode($response, true);
-
-            error_log('Grade obtained: ' . print_r($grades, true));
-        } catch (Exception $e) {
-            error_log('Error sending data to API: ' . $e->getMessage());
-            return;
-        }
-
-        error_log('After API call');
-
-        pasteGradedMarks($grades, $inputNames, $maxmark);
-
-        error_log('URL matches /mod/quiz/report.php in page_init');
+        $PAGE->requires->js(new moodle_url('/local/asystgrade/js/grade.js', ['v' => time()]));
+        $PAGE->requires->js_init_call('M.local_asystgrade.init', [$js_data]);
     }
-}
-
-/**
- * Adds JavasScript scrypt to update marks
- * @param  array $grades
- * @param  array $inputNames
- * @param  float $maxmark
- * @return void
- */
-
-function pasteGradedMarks(array $grades, array $inputNames, float $maxmark): void
-{
-    echo generate_script($grades, $inputNames, $maxmark);
 }
 
 /**
@@ -151,54 +116,3 @@ function prepare_api_data(quizquery $database, $question_attempts, $referenceAns
         'studentData' => $studentData
     ];
 }
-
-/**
- * Builds JavasScript scrypt to update marks using DOM manipulations
- *
- * @param  array $grades
- * @param  array $inputNames
- * @param  float $maxmark
- * @return string
- */
-function generate_script(array $grades, array $inputNames, float $maxmark) {
-    $script = "<script type='text/javascript'>
-        document.addEventListener('DOMContentLoaded', function() {";
-
-    foreach ($grades as $index => $grade) {
-        if (isset($grade['predicted_grade'])) {
-            $predicted_grade = $grade['predicted_grade'] == 'correct' ? $maxmark : 0;
-            $input_name = $inputNames[$index];
-            $script .= "
-                console.log('Trying to update input: {$input_name} with grade: {$predicted_grade}');
-                var gradeInput = document.querySelector('input[name=\"{$input_name}\"]');
-                if (gradeInput) {
-                    console.log('Found input: {$input_name}');
-                    gradeInput.value = '{$predicted_grade}';
-                } else {
-                    console.log('Input not found: {$input_name}');
-                }";
-        }
-    }
-
-    $script .= "});
-    </script>";
-
-    return $script;
-}
-
-/**
- * Autoloader registration
- */
-//spl_autoload_register(function ($classname) {
-//    // Check if the class name starts with our plugin's namespace
-//    if (strpos($classname, 'local_asystgrade\\') === 0) {
-//        // Transforming the Namespace into the Path
-//        $classname = str_replace('local_asystgrade\\', '', $classname);
-//        $classname = str_replace('\\', DIRECTORY_SEPARATOR, $classname);
-//        $filepath  = __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $classname . '.php';
-//
-//        if (file_exists($filepath)) {
-//            require_once($filepath);
-//        }
-//    }
-//});
