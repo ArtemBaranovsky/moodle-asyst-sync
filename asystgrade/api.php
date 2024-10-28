@@ -1,6 +1,5 @@
 <?php
 
-// local/asystgrade/api.php
 require_once('../../config.php');
 require_once('lib.php');
 
@@ -30,7 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
         }
-
     } else {
         echo json_encode(['error' => 'No data received']);
     }
